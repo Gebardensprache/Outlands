@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2026.11.16] - 2026-11-16
+
+### 🐛 Bug Fixes
+
+- [`05983c0`](https://github.com/Project-Outlands/Outlands/commit/05983c0437278087568ed3adadb54c69c7d6ffd9) - *(config)* ConfigManager crash on non-publich config classes *(commit by [@kappa-maintainer](https://github.com/kappa-maintainer))*
+
+
 ## [2026.11.14] - 2026-11-14
 
 ### 🐛 Bug Fixes
