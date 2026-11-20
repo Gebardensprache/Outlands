@@ -22,6 +22,7 @@ package net.minecraftforge.fml.common.asm.transformers;
 import net.minecraft.launchwrapper.IClassNameTransformer;
 import net.minecraft.launchwrapper.IClassTransformer;
 import net.minecraft.launchwrapper.Launch;
+import net.minecraftforge.fml.common.FMLLog;
 import net.minecraftforge.fml.common.asm.transformers.deobf.FMLDeobfuscatingRemapper;
 import net.minecraftforge.fml.common.asm.transformers.deobf.FMLRemappingAdapter;
 import org.objectweb.asm.ClassReader;
@@ -50,7 +51,7 @@ public class DeobfuscationTransformer implements IClassTransformer, IClassNameTr
             return null;
         }
 
-        if (Objects.equals(name, transformedName)) return bytes;
+        if (!transformedName.startsWith("net.minecraft.")) return bytes;
 
         ClassReader classReader = new ClassReader(bytes);
         ClassWriter classWriter = new ClassWriter(WRITER_FLAGS);
