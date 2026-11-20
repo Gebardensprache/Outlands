@@ -36,6 +36,12 @@ configurations {
     }
 
     testCompile.extendsFrom(lwjglNatives)
+
+    // The field table of the oldest release the shims must run on: CapabilityFieldCompatibilityTest reads it, nothing
+    // launches against it, and only the OpenGL module is needed. It never reaches a launcher classpath.
+    lwjglMinimumApi {
+        transitive = false
+    }
 }
 
 // Plain LWJGL3 API jars (no classifier) for the table check and the upcoming compile-time API
@@ -52,6 +58,8 @@ dependencies {
     lwjglLibraries[0].each {
         lwjgl3Api "org.lwjgl:$it:$props.lwjgl_version"
     }
+
+    lwjglMinimumApi "org.lwjgl:lwjgl-opengl:$props.lwjgl_minimum_version"
 
     // LWJGL: the LWJGL2 API surface comes from the in-tree shims, so only LWJGL3 is compiled against.
     lwjglLibraries[0].each {

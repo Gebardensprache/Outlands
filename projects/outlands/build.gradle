@@ -224,6 +224,12 @@ processResources {
     filesMatching('cleanmix.info') {
         expand cleanmix_version: project.ext.cleanmixVersion
     }
+    // LwjglRuntime compares the release that actually runs with the one the shims are compiled against, and
+    // CapabilityFieldCompatibilityTest checks that the shims stay runnable on the oldest supported one. Both bounds
+    // live in gradle.properties and are baked in here instead of being repeated as Java constants.
+    filesMatching('lwjgl.properties') {
+        expand lwjgl_version: props.lwjgl_version, lwjgl_minimum_version: props.lwjgl_minimum_version
+    }
 }
 
 test {
@@ -233,6 +239,13 @@ test {
         events 'passed', 'skipped', 'failed'
     }
     jvmArgs ProjectConstants.JVM_ARGUMENTS + ProjectConstants.COMPILER_JVM_ARGUMENTS
+    // The shims link to GLCapabilities fields at compile time but run against whatever LWJGL the launcher supplies.
+    // Handing the oldest supported release to the test turns that skew into a test failure instead of a
+    // NoSuchFieldError in Display.create(). Set here (and not at configuration time) so the dependency only resolves
+    // when the tests actually run.
+    doFirst {
+        systemProperty 'outlands.test.lwjglMinimumApi', configurations.lwjglMinimumApi.asPath
+    }
 }
 
 

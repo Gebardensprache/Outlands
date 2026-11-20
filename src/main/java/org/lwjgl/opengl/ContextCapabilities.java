@@ -1,9 +1,22 @@
 package org.lwjgl.opengl;
 
+import java.lang.reflect.Field;
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
-/** Capability flags exposed to legacy LWJGL callers without reflective field access. */
+/**
+ * Capability flags exposed to legacy LWJGL callers.
+ * <p>
+ * Most flags are read straight from the runtime's {@link GLCapabilities}; the ones whose presence differs between
+ * LWJGL releases go through {@link #supports}, which resolves the field by name and falls back to false when the
+ * running release does not have it.
+ */
 public class ContextCapabilities {
+    /** Capability fields resolved on this runtime so far, and the ones it does not have at all. */
+    private static final Map<String, Field> CAPABILITY_FIELDS = new ConcurrentHashMap<>();
+    private static final Set<String> ABSENT_CAPABILITY_FIELDS = ConcurrentHashMap.newKeySet();
+
     GLCapabilities cap;
 
     /** Reads the active native context or the names installed through GLCapabilitiesOverride. */
@@ -18,14 +31,15 @@ public class ContextCapabilities {
 
     private ContextCapabilities(GLCapabilities capabilities, Set<String> advertised) {
         cap = capabilities;
+        LwjglRuntime.verify();
         GL_AMD_blend_minmax_factor = cap == null ? advertised.contains("GL_AMD_blend_minmax_factor") : cap.GL_AMD_blend_minmax_factor;
         GL_AMD_conservative_depth = cap == null ? advertised.contains("GL_AMD_conservative_depth") : cap.GL_AMD_conservative_depth;
         GL_AMD_debug_output = cap == null ? advertised.contains("GL_AMD_debug_output") : cap.GL_AMD_debug_output;
         GL_AMD_depth_clamp_separate = cap == null ? advertised.contains("GL_AMD_depth_clamp_separate") : cap.GL_AMD_depth_clamp_separate;
         GL_AMD_draw_buffers_blend = cap == null ? advertised.contains("GL_AMD_draw_buffers_blend") : cap.GL_AMD_draw_buffers_blend;
         GL_AMD_interleaved_elements = cap == null ? advertised.contains("GL_AMD_interleaved_elements") : cap.GL_AMD_interleaved_elements;
-        GL_AMD_multi_draw_indirect = cap == null ? advertised.contains("GL_AMD_multi_draw_indirect") : false;
-        GL_AMD_name_gen_delete = cap == null ? advertised.contains("GL_AMD_name_gen_delete") : false;
+        GL_AMD_multi_draw_indirect = supports(cap, advertised, "GL_AMD_multi_draw_indirect");
+        GL_AMD_name_gen_delete = supports(cap, advertised, "GL_AMD_name_gen_delete");
         GL_AMD_performance_monitor = cap == null ? advertised.contains("GL_AMD_performance_monitor") : cap.GL_AMD_performance_monitor;
         GL_AMD_pinned_memory = cap == null ? advertised.contains("GL_AMD_pinned_memory") : cap.GL_AMD_pinned_memory;
         GL_AMD_query_buffer_object = cap == null ? advertised.contains("GL_AMD_query_buffer_object") : cap.GL_AMD_query_buffer_object;
@@ -41,21 +55,21 @@ public class ContextCapabilities {
         GL_AMD_vertex_shader_layer = cap == null ? advertised.contains("GL_AMD_vertex_shader_layer") : cap.GL_AMD_vertex_shader_layer;
         GL_AMD_vertex_shader_tessellator = cap == null ? advertised.contains("GL_AMD_vertex_shader_tessellator") : cap.GL_AMD_vertex_shader_tessellator;
         GL_AMD_vertex_shader_viewport_index = cap == null ? advertised.contains("GL_AMD_vertex_shader_viewport_index") : cap.GL_AMD_vertex_shader_viewport_index;
-        GL_APPLE_aux_depth_stencil = cap == null ? advertised.contains("GL_APPLE_aux_depth_stencil") : cap.GL_APPLE_aux_depth_stencil;
-        GL_APPLE_client_storage = cap == null ? advertised.contains("GL_APPLE_client_storage") : cap.GL_APPLE_client_storage;
-        GL_APPLE_element_array = cap == null ? advertised.contains("GL_APPLE_element_array") : cap.GL_APPLE_element_array;
-        GL_APPLE_fence = cap == null ? advertised.contains("GL_APPLE_fence") : cap.GL_APPLE_fence;
-        GL_APPLE_float_pixels = cap == null ? advertised.contains("GL_APPLE_float_pixels") : cap.GL_APPLE_float_pixels;
-        GL_APPLE_flush_buffer_range = cap == null ? advertised.contains("GL_APPLE_flush_buffer_range") : cap.GL_APPLE_flush_buffer_range;
-        GL_APPLE_object_purgeable = cap == null ? advertised.contains("GL_APPLE_object_purgeable") : cap.GL_APPLE_object_purgeable;
-        GL_APPLE_packed_pixels = cap == null ? advertised.contains("GL_APPLE_packed_pixels") : false;
-        GL_APPLE_rgb_422 = cap == null ? advertised.contains("GL_APPLE_rgb_422") : cap.GL_APPLE_rgb_422;
-        GL_APPLE_row_bytes = cap == null ? advertised.contains("GL_APPLE_row_bytes") : cap.GL_APPLE_row_bytes;
-        GL_APPLE_texture_range = cap == null ? advertised.contains("GL_APPLE_texture_range") : cap.GL_APPLE_texture_range;
-        GL_APPLE_vertex_array_object = cap == null ? advertised.contains("GL_APPLE_vertex_array_object") : cap.GL_APPLE_vertex_array_object;
-        GL_APPLE_vertex_array_range = cap == null ? advertised.contains("GL_APPLE_vertex_array_range") : cap.GL_APPLE_vertex_array_range;
-        GL_APPLE_vertex_program_evaluators = cap == null ? advertised.contains("GL_APPLE_vertex_program_evaluators") : cap.GL_APPLE_vertex_program_evaluators;
-        GL_APPLE_ycbcr_422 = cap == null ? advertised.contains("GL_APPLE_ycbcr_422") : cap.GL_APPLE_ycbcr_422;
+        GL_APPLE_aux_depth_stencil = supports(cap, advertised, "GL_APPLE_aux_depth_stencil");
+        GL_APPLE_client_storage = supports(cap, advertised, "GL_APPLE_client_storage");
+        GL_APPLE_element_array = supports(cap, advertised, "GL_APPLE_element_array");
+        GL_APPLE_fence = supports(cap, advertised, "GL_APPLE_fence");
+        GL_APPLE_float_pixels = supports(cap, advertised, "GL_APPLE_float_pixels");
+        GL_APPLE_flush_buffer_range = supports(cap, advertised, "GL_APPLE_flush_buffer_range");
+        GL_APPLE_object_purgeable = supports(cap, advertised, "GL_APPLE_object_purgeable");
+        GL_APPLE_packed_pixels = supports(cap, advertised, "GL_APPLE_packed_pixels");
+        GL_APPLE_rgb_422 = supports(cap, advertised, "GL_APPLE_rgb_422");
+        GL_APPLE_row_bytes = supports(cap, advertised, "GL_APPLE_row_bytes");
+        GL_APPLE_texture_range = supports(cap, advertised, "GL_APPLE_texture_range");
+        GL_APPLE_vertex_array_object = supports(cap, advertised, "GL_APPLE_vertex_array_object");
+        GL_APPLE_vertex_array_range = supports(cap, advertised, "GL_APPLE_vertex_array_range");
+        GL_APPLE_vertex_program_evaluators = supports(cap, advertised, "GL_APPLE_vertex_program_evaluators");
+        GL_APPLE_ycbcr_422 = supports(cap, advertised, "GL_APPLE_ycbcr_422");
         GL_ARB_ES2_compatibility = cap == null ? advertised.contains("GL_ARB_ES2_compatibility") : cap.GL_ARB_ES2_compatibility;
         GL_ARB_ES3_compatibility = cap == null ? advertised.contains("GL_ARB_ES3_compatibility") : cap.GL_ARB_ES3_compatibility;
         GL_ARB_arrays_of_arrays = cap == null ? advertised.contains("GL_ARB_arrays_of_arrays") : cap.GL_ARB_arrays_of_arrays;
@@ -398,6 +412,49 @@ public class ContextCapabilities {
         GL_KHR_context_flush_control = cap == null ? advertised.contains("GL_KHR_context_flush_control") : cap.GL_KHR_context_flush_control;
         GL_KHR_robust_buffer_access_behavior = cap == null ? advertised.contains("GL_KHR_robust_buffer_access_behavior") : cap.GL_KHR_robust_buffer_access_behavior;
         GL_KHR_robustness = cap == null ? advertised.contains("GL_KHR_robustness") : cap.GL_KHR_robustness;
+        LwjglRuntime.reportMissingCapabilities();
+    }
+
+    /**
+     * Reads one capability flag from the runtime's {@link GLCapabilities}, or from the names an external rendering
+     * integration advertised when there is no native context.
+     * <p>
+     * Which fields {@code GLCapabilities} has is not stable across LWJGL releases: 3.4.2 added the {@code GL_APPLE_*}
+     * flags and 3.4.3 dropped others, while Android launchers pin a release of their own - Zalith ships 3.4.1, whose
+     * build has to carry the bionic natives. Linking to a field the runtime does not have is a
+     * {@link NoSuchFieldError} raised while {@code Display.create} builds this table, before the main menu and with
+     * nothing in the stack trace pointing at the real cause. Flags the LWJGL2 API knows but the runtime cannot answer
+     * are therefore looked up by name and fall back to false.
+     */
+    private static boolean supports(GLCapabilities capabilities, Set<String> advertised, String name) {
+        if (capabilities == null) return advertised.contains(name);
+        Field field = capabilityField(name);
+        if (field == null) {
+            LwjglRuntime.noteMissingCapability(name);
+            return advertised.contains(name);
+        }
+        try {
+            return field.getBoolean(capabilities);
+        } catch (IllegalAccessException e) {
+            // getField only hands out public fields, so this cannot happen; answering false is still better than
+            // failing an entire launch over a capability probe.
+            return false;
+        }
+    }
+
+    /** Resolves a capability field once per JVM and remembers which ones this LWJGL release does not have. */
+    private static Field capabilityField(String name) {
+        Field field = CAPABILITY_FIELDS.get(name);
+        if (field != null) return field;
+        if (ABSENT_CAPABILITY_FIELDS.contains(name)) return null;
+        try {
+            field = GLCapabilities.class.getField(name);
+            CAPABILITY_FIELDS.put(name, field);
+            return field;
+        } catch (NoSuchFieldException e) {
+            ABSENT_CAPABILITY_FIELDS.add(name);
+            return null;
+        }
     }
 
     public boolean GL_AMD_blend_minmax_factor;
